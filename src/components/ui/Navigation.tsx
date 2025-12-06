@@ -27,17 +27,17 @@ const socialLinks = [
   },
   {
     icon: Facebook,
-    href: "https://facebook.com/",
+    href: "https://facebook.com/JeskaiMage",
     label: "Facebook",
   },
   {
     icon: Instagram,
-    href: "https://instagram.com/",
+    href: "https://instagram.com/themodernopossum",
     label: "Instagram",
   },
   {
     icon: Youtube,
-    href: "https://youtube.com/",
+    href: "https://youtube.com/@OhanaRecovery",
     label: "YouTube",
   },
   { icon: Mail, href: "mailto:daniel_minton@icloud.com", label: "Email" },
