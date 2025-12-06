@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morpheus - Generative Art Engine</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 20px;
+      z-index: 10;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #ec4899, #a855f7, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 16px; }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-label {
+      font-size: 0.75rem;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .preset-btn {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      text-align: center;
+    }
+    .preset-btn:hover { background: rgba(255,255,255,0.1); }
+    .preset-btn.active {
+      background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3));
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      color: white;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4); }
+    .stats {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+    }
+    .stat {
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ec4899, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 0.625rem;
+      color: #888;
+      text-transform: uppercase;
+    }
+    .color-preview {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .color-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <canvas id="canvas"></canvas>
+
+    <div class="overlay">
+      <h1>Morpheus</h1>
+      <p class="subtitle">Procedural generative art engine</p>
+
+      <div class="controls">
+        <div class="control-group">
+          <div class="control-label">Preset</div>
+          <div class="presets">
+            <button class="preset-btn active" data-preset="flow" onclick="setPreset('flow')">Flow Field</button>
+            <button class="preset-btn" data-preset="fractal" onclick="setPreset('fractal')">Fractal</button>
+            <button class="preset-btn" data-preset="wave" onclick="setPreset('wave')">Waves</button>
+            <button class="preset-btn" data-preset="spiral" onclick="setPreset('spiral')">Spiral</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Complexity</span>
+            <span id="complexityValue">50</span>
+          </div>
+          <input type="range" id="complexity" min="10" max="100" value="50" oninput="updateComplexity()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Speed</span>
+            <span id="speedValue">50</span>
+          </div>
+          <input type="range" id="speed" min="1" max="100" value="50" oninput="updateSpeed()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Palette</span>
+          </div>
+          <div class="color-preview" id="palette"></div>
+        </div>
+
+        <button class="btn" onclick="randomize()">✨ Randomize</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="fps">60</div>
+        <div class="stat-label">FPS</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="particles">1000</div>
+        <div class="stat-label">Elements</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="frame">0</div>
+        <div class="stat-label">Frame</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let preset = 'flow';
+    let complexity = 50;
+    let speed = 50;
+    let time = 0;
+    let particles = [];
+    let frameCount = 0;
+    let lastFpsTime = performance.now();
+    let fpsCount = 0;
+
+    const palettes = {
+      sunset: ['#ec4899', '#f472b6', '#a855f7', '#f97316', '#fbbf24'],
+      ocean: ['#06b6d4', '#0891b2', '#22d3ee', '#3b82f6', '#60a5fa'],
+      forest: ['#22c55e', '#4ade80', '#84cc16', '#a3e635', '#10b981'],
+      fire: ['#ef4444', '#f97316', '#fbbf24', '#dc2626', '#f59e0b'],
+      cosmic: ['#a855f7', '#ec4899', '#3b82f6', '#8b5cf6', '#c084fc']
+    };
+
+    let currentPalette = palettes.sunset;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initParticles();
+    }
+
+    function initParticles() {
+      particles = [];
+      const count = Math.floor(complexity * 20);
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: 0,
+          vy: 0,
+          color: currentPalette[Math.floor(Math.random() * currentPalette.length)],
+          size: 1 + Math.random() * 2,
+          life: Math.random()
+        });
+      }
+      document.getElementById('particles').textContent = count;
+    }
+
+    function noise(x, y, t) {
+      return Math.sin(x * 0.01 + t) * Math.cos(y * 0.01 + t) +
+             Math.sin((x + y) * 0.005 + t * 0.5);
+    }
+
+    function flowField(x, y, t) {
+      const scale = 0.005 * (complexity / 50);
+      const angle = noise(x * scale, y * scale, t * 0.001) * Math.PI * 2;
+      return { x: Math.cos(angle), y: Math.sin(angle) };
+    }
+
+    function fractalNoise(x, y, t) {
+      let value = 0;
+      let amplitude = 1;
+      let frequency = 0.001 * (complexity / 50);
+      for (let i = 0; i < 4; i++) {
+        value += Math.sin(x * frequency + t * 0.001) * Math.cos(y * frequency + t * 0.001) * amplitude;
+        amplitude *= 0.5;
+        frequency *= 2;
+      }
+      return value;
+    }
+
+    function wavePattern(x, y, t) {
+      const scale = 0.02 * (complexity / 50);
+      const wave1 = Math.sin(x * scale + t * 0.002);
+      const wave2 = Math.sin(y * scale + t * 0.003);
+      return (wave1 + wave2) * 0.5;
+    }
+
+    function spiralPattern(x, y, t) {
+      const cx = width / 2;
+      const cy = height / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      return Math.sin(dist * 0.02 * (complexity / 50) + angle * 3 + t * 0.002);
+    }
+
+    function render() {
+      // Fade trail
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, width, height);
+
+      const speedFactor = speed / 50;
+
+      particles.forEach(p => {
+        let force;
+
+        switch (preset) {
+          case 'flow':
+            force = flowField(p.x, p.y, time);
+            p.vx += force.x * 0.5 * speedFactor;
+            p.vy += force.y * 0.5 * speedFactor;
+            break;
+
+          case 'fractal':
+            const f = fractalNoise(p.x, p.y, time);
+            p.vx += Math.cos(f * Math.PI * 2) * 0.3 * speedFactor;
+            p.vy += Math.sin(f * Math.PI * 2) * 0.3 * speedFactor;
+            break;
+
+          case 'wave':
+            const w = wavePattern(p.x, p.y, time);
+            p.vx += w * 0.3 * speedFactor;
+            p.vy += Math.cos(p.x * 0.01 + time * 0.001) * 0.3 * speedFactor;
+            break;
+
+          case 'spiral':
+            const s = spiralPattern(p.x, p.y, time);
+            const cx = width / 2;
+            const cy = height / 2;
+            const angle = Math.atan2(p.y - cy, p.x - cx) + Math.PI / 2;
+            p.vx += Math.cos(angle) * 0.5 * speedFactor + s * 0.2;
+            p.vy += Math.sin(angle) * 0.5 * speedFactor + s * 0.2;
+            break;
+        }
+
+        // Apply velocity with damping
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap around edges
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        // Draw particle
+        const velocity = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        const alpha = Math.min(1, velocity * 0.5 + 0.2);
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+
+        // Draw trail
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.vx * 5, p.y - p.vy * 5);
+        ctx.strokeStyle = p.color;
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.lineWidth = p.size * 0.5;
+        ctx.stroke();
+      });
+
+      ctx.globalAlpha = 1;
+      time += speedFactor;
+      frameCount++;
+
+      // Update FPS
+      fpsCount++;
+      const now = performance.now();
+      if (now - lastFpsTime >= 1000) {
+        document.getElementById('fps').textContent = fpsCount;
+        fpsCount = 0;
+        lastFpsTime = now;
+      }
+
+      document.getElementById('frame').textContent = frameCount;
+
+      requestAnimationFrame(render);
+    }
+
+    function setPreset(p) {
+      preset = p;
+      document.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === p);
+      });
+    }
+
+    function updateComplexity() {
+      complexity = parseInt(document.getElementById('complexity').value);
+      document.getElementById('complexityValue').textContent = complexity;
+      initParticles();
+    }
+
+    function updateSpeed() {
+      speed = parseInt(document.getElementById('speed').value);
+      document.getElementById('speedValue').textContent = speed;
+    }
+
+    function randomize() {
+      const presets = ['flow', 'fractal', 'wave', 'spiral'];
+      const paletteNames = Object.keys(palettes);
+
+      setPreset(presets[Math.floor(Math.random() * presets.length)]);
+
+      currentPalette = palettes[paletteNames[Math.floor(Math.random() * paletteNames.length)]];
+      renderPalette();
+
+      document.getElementById('complexity').value = 20 + Math.floor(Math.random() * 80);
+      document.getElementById('speed').value = 20 + Math.floor(Math.random() * 80);
+      updateComplexity();
+      updateSpeed();
+    }
+
+    function renderPalette() {
+      const container = document.getElementById('palette');
+      container.innerHTML = currentPalette.map(c =>
+        `<div class="color-dot" style="background: ${c}"></div>`
+      ).join('');
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    renderPalette();
+    render();
+  </script>
+</body>
+</html>

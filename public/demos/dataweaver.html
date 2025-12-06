@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataWeaver - ETL Pipeline Visualizer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0a1628 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .pipeline-container {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+    .pipeline-line {
+      position: absolute;
+      top: 50%;
+      left: 60px;
+      right: 60px;
+      height: 2px;
+      background: rgba(255,255,255,0.1);
+      z-index: 0;
+    }
+    .pipeline-progress {
+      position: absolute;
+      top: 50%;
+      left: 60px;
+      height: 2px;
+      background: linear-gradient(90deg, #f59e0b, #22c55e);
+      z-index: 1;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    .stage-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      transition: all 0.3s;
+    }
+    .stage.active .stage-icon {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+    .stage.complete .stage-icon {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .stage-label {
+      font-size: 0.75rem;
+      color: #888;
+      text-align: center;
+    }
+    .stage.active .stage-label { color: #f59e0b; }
+    .stage.complete .stage-label { color: #22c55e; }
+    .data-flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .flow-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .flow-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .flow-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+    .flow-stat {
+      padding: 8px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+    }
+    .flow-stat-label { color: #666; font-size: 0.625rem; }
+    .flow-stat-value { color: #fff; font-weight: 600; }
+    .flow-stat-value.yellow { color: #f59e0b; }
+    .flow-stat-value.green { color: #22c55e; }
+    .flow-stat-value.blue { color: #3b82f6; }
+    .logs {
+      background: #0a0a0a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .logs-header {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.75rem;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
+    .logs-body {
+      padding: 12px 16px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.7rem;
+      height: 120px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      padding: 4px 0;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    .log-time { color: #666; }
+    .log-extract { color: #f59e0b; }
+    .log-transform { color: #a855f7; }
+    .log-load { color: #22c55e; }
+    .log-info { color: #3b82f6; }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DataWeaver</h1>
+    <p class="subtitle">Visual ETL pipeline orchestration and monitoring</p>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="runBtn" onclick="runPipeline()">Run Pipeline</button>
+      <button class="btn btn-secondary" onclick="resetPipeline()">Reset</button>
+    </div>
+
+    <div class="pipeline-container">
+      <div class="pipeline">
+        <div class="pipeline-line"></div>
+        <div class="pipeline-progress" id="pipelineProgress"></div>
+
+        <div class="stage" id="stage-source">
+          <div class="stage-icon">📥</div>
+          <div class="stage-label">Source</div>
+        </div>
+
+        <div class="stage" id="stage-extract">
+          <div class="stage-icon">🔍</div>
+          <div class="stage-label">Extract</div>
+        </div>
+
+        <div class="stage" id="stage-transform">
+          <div class="stage-icon">⚙️</div>
+          <div class="stage-label">Transform</div>
+        </div>
+
+        <div class="stage" id="stage-validate">
+          <div class="stage-icon">✅</div>
+          <div class="stage-label">Validate</div>
+        </div>
+
+        <div class="stage" id="stage-load">
+          <div class="stage-icon">📤</div>
+          <div class="stage-label">Load</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-flow">
+      <div class="flow-card">
+        <div class="flow-header">📊 Input Stream</div>
+        <div class="flow-stats">
+          <div class="flow-stat">
+            <div class="flow-stat-label">Records</div>
+            <div class="flow-stat-value yellow" id="inputRecords">0</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Size</div>
+            <div class="flow-stat-value" id="inputSize">0 MB</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Format</div>
+            <div class="flow-stat-value">JSON</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Source</div>
+            <div class="flow-stat-value">S3</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-header">🔄 Processing</div>
+        <div class="flow-stats">
+          <div class="flow-stat">
+            <div class="flow-stat-label">Throughput</div>
+            <div class="flow-stat-value blue" id="throughput">0/s</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Errors</div>
+            <div class="flow-stat-value" id="errors">0</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Transforms</div>
+            <div class="flow-stat-value">12</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Workers</div>
+            <div class="flow-stat-value">4</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-header">📦 Output</div>
+        <div class="flow-stats">
+          <div class="flow-stat">
+            <div class="flow-stat-label">Written</div>
+            <div class="flow-stat-value green" id="outputRecords">0</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Size</div>
+            <div class="flow-stat-value" id="outputSize">0 MB</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Format</div>
+            <div class="flow-stat-value">Parquet</div>
+          </div>
+          <div class="flow-stat">
+            <div class="flow-stat-label">Target</div>
+            <div class="flow-stat-value">Redshift</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="logs">
+      <div class="logs-header">
+        <span>Pipeline Logs</span>
+        <span id="logStatus">Idle</span>
+      </div>
+      <div class="logs-body" id="logBody">
+        <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-info">DataWeaver v3.2.0 initialized</span></div>
+        <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-info">Waiting for pipeline execution...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let logTime = 0;
+
+    const stages = ['source', 'extract', 'transform', 'validate', 'load'];
+    let currentStage = -1;
+    let records = 0;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = (seconds % 60).toString().padStart(2, '0');
+      return `00:${mins}:${secs}`;
+    }
+
+    function addLog(message, type = 'info') {
+      const logBody = document.getElementById('logBody');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">[${formatTime(logTime)}]</span> <span class="log-${type}">${message}</span>`;
+      logBody.appendChild(entry);
+      logBody.scrollTop = logBody.scrollHeight;
+      logTime++;
+    }
+
+    function setStage(index) {
+      stages.forEach((s, i) => {
+        const el = document.getElementById(`stage-${s}`);
+        el.classList.remove('active', 'complete');
+        if (i < index) el.classList.add('complete');
+        if (i === index) el.classList.add('active');
+      });
+
+      const progress = document.getElementById('pipelineProgress');
+      progress.style.width = `${(index / (stages.length - 1)) * 100}%`;
+    }
+
+    async function runPipeline() {
+      if (isRunning) return;
+      isRunning = true;
+      document.getElementById('runBtn').disabled = true;
+      document.getElementById('logStatus').textContent = 'Running';
+
+      // Source stage
+      setStage(0);
+      addLog('Connecting to S3 bucket...', 'extract');
+      await sleep(500);
+      addLog('Source connection established', 'extract');
+      await sleep(300);
+
+      // Extract stage
+      setStage(1);
+      addLog('Starting data extraction...', 'extract');
+      await animateRecords('inputRecords', 0, 50000, 1500);
+      document.getElementById('inputSize').textContent = '24.7 MB';
+      addLog('Extracted 50,000 records (24.7 MB)', 'extract');
+      await sleep(300);
+
+      // Transform stage
+      setStage(2);
+      addLog('Applying transformations...', 'transform');
+      addLog('→ Cleaning null values', 'transform');
+      await sleep(400);
+      addLog('→ Normalizing timestamps', 'transform');
+      await sleep(400);
+      addLog('→ Computing aggregations', 'transform');
+      await sleep(400);
+      document.getElementById('throughput').textContent = '3,421/s';
+      addLog('Transformations complete', 'transform');
+      await sleep(300);
+
+      // Validate stage
+      setStage(3);
+      addLog('Running validation checks...', 'info');
+      await sleep(500);
+      addLog('Schema validation: PASSED', 'info');
+      await sleep(300);
+      addLog('Data quality score: 98.7%', 'info');
+      document.getElementById('errors').textContent = '12';
+      await sleep(300);
+
+      // Load stage
+      setStage(4);
+      addLog('Loading to Redshift...', 'load');
+      await animateRecords('outputRecords', 0, 49988, 1500);
+      document.getElementById('outputSize').textContent = '18.2 MB';
+      addLog('Successfully loaded 49,988 records', 'load');
+      await sleep(300);
+
+      document.getElementById('logStatus').textContent = 'Complete';
+      addLog('Pipeline execution completed successfully!', 'info');
+      isRunning = false;
+      document.getElementById('runBtn').disabled = false;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function animateRecords(elementId, start, end, duration) {
+      const el = document.getElementById(elementId);
+      const steps = 30;
+      const increment = (end - start) / steps;
+      const stepDuration = duration / steps;
+
+      for (let i = 0; i <= steps; i++) {
+        el.textContent = Math.floor(start + increment * i).toLocaleString();
+        await sleep(stepDuration);
+      }
+    }
+
+    function resetPipeline() {
+      if (isRunning) return;
+      stages.forEach(s => {
+        document.getElementById(`stage-${s}`).classList.remove('active', 'complete');
+      });
+      document.getElementById('pipelineProgress').style.width = '0%';
+      document.getElementById('inputRecords').textContent = '0';
+      document.getElementById('inputSize').textContent = '0 MB';
+      document.getElementById('outputRecords').textContent = '0';
+      document.getElementById('outputSize').textContent = '0 MB';
+      document.getElementById('throughput').textContent = '0/s';
+      document.getElementById('errors').textContent = '0';
+      document.getElementById('logStatus').textContent = 'Idle';
+      logTime = 0;
+      document.getElementById('logBody').innerHTML = `
+        <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-info">DataWeaver v3.2.0 initialized</span></div>
+        <div class="log-entry"><span class="log-time">[00:00:00]</span> <span class="log-info">Pipeline reset. Waiting for execution...</span></div>
+      `;
+    }
+  </script>
+</body>
+</html>
