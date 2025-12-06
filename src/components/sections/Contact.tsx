@@ -82,15 +82,32 @@ export function Contact() {
     e.preventDefault();
     setStatus("loading");
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Submit to Formspree - replace YOUR_FORM_ID with actual ID from formspree.io
+      const response = await fetch("https://formspree.io/f/xwpkvgvd", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formState.name,
+          email: formState.email,
+          message: formState.message,
+        }),
+      });
 
-    // In production, this would be an actual API call
-    setStatus("success");
-    setFormState({ name: "", email: "", message: "" });
+      if (response.ok) {
+        setStatus("success");
+        setFormState({ name: "", email: "", message: "" });
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
 
     // Reset status after delay
-    setTimeout(() => setStatus("idle"), 3000);
+    setTimeout(() => setStatus("idle"), 5000);
   };
 
   return (
