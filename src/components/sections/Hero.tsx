@@ -36,7 +36,7 @@ export function Hero() {
           className="flex items-center justify-center gap-2 mb-6"
         >
           <span className="text-zinc-500 text-sm tracking-widest uppercase">
-            Creative Technologist
+            Full-Stack Engineer
           </span>
           <span className="w-8 h-px bg-violet-500" />
         </motion.div>

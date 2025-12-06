@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://danielminton.com"),
-  title: "Daniel Minton | Creative Technologist & Full-Stack Engineer",
+  title: "Daniel Minton | Full-Stack Engineer",
   description:
     "Full-stack engineer with 10+ years building production software. Founder, builder, and creative technologist based in San Francisco.",
   keywords: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "React Developer",
     "TypeScript",
     "San Francisco",
-    "Creative Technologist",
+    "Full-Stack Engineer",
   ],
   authors: [{ name: "Daniel Minton" }],
   creator: "Daniel Minton",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://danielminton.com",
-    title: "Daniel Minton | Creative Technologist",
+    title: "Daniel Minton | Full-Stack Engineer",
     description:
       "Full-stack engineer with 10+ years building production software.",
     siteName: "Daniel Minton",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Daniel Minton | Creative Technologist",
+    title: "Daniel Minton | Full-Stack Engineer",
     description:
       "Full-stack engineer with 10+ years building production software.",
     images: ["/opengraph-image"],

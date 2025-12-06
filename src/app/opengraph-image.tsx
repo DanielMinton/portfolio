@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Daniel Minton - Creative Technologist & Full-Stack Engineer";
+export const alt = "Daniel Minton - Full-Stack Engineer";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -85,7 +85,7 @@ export default async function Image() {
               marginBottom: 24,
             }}
           >
-            Creative Technologist & Full-Stack Engineer
+            Full-Stack Engineer
           </span>
 
           <span style={{ fontSize: 24, color: "#71717a", marginBottom: 40 }}>
