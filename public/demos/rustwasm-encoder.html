@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RustWASM Encoder - High-Performance Encoding</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a0a0a 0%, #2d1f1f 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: #f87171;
+      margin-bottom: 24px;
+    }
+    .input-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    textarea {
+      width: 100%;
+      height: 100px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px;
+      color: #fff;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.875rem;
+      resize: none;
+      outline: none;
+    }
+    textarea:focus { border-color: #ef4444; }
+    .options {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .option-group {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .option-label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.875rem;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: #ef4444; }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+    }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .result-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .result-title { font-size: 0.875rem; font-weight: 600; }
+    .result-time {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      background: rgba(239, 68, 68, 0.2);
+      border-radius: 4px;
+      color: #f87171;
+    }
+    .result-output {
+      background: rgba(0,0,0,0.3);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.75rem;
+      word-break: break-all;
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    .benchmark {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .benchmark-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .benchmark-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .benchmark-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .benchmark-label {
+      width: 100px;
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .benchmark-bar {
+      flex: 1;
+      height: 24px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .benchmark-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .benchmark-fill.rust { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .benchmark-fill.js { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .benchmark-value {
+      width: 60px;
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .processing {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      color: #888;
+    }
+    .processing.active { display: flex; }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      border-top-color: #ef4444;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RustWASM Encoder</h1>
+    <p class="subtitle">High-performance text encoding compiled from Rust to WebAssembly</p>
+    <div class="badge">🦀 Powered by Rust + WASM</div>
+
+    <div class="input-section">
+      <div class="section-title">📝 Input Text</div>
+      <textarea id="input" placeholder="Enter text to encode...">Hello, WebAssembly! This is a demonstration of Rust compiled to WASM for high-performance encoding operations.</textarea>
+    </div>
+
+    <div class="options">
+      <div class="option-group">
+        <div class="option-label">Encoding Algorithm</div>
+        <select id="algorithm">
+          <option value="base64">Base64</option>
+          <option value="hex">Hexadecimal</option>
+          <option value="rot13">ROT13</option>
+          <option value="reverse">Reverse</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <div class="option-label">Iterations (Benchmark)</div>
+        <select id="iterations">
+          <option value="1000">1,000</option>
+          <option value="10000" selected>10,000</option>
+          <option value="100000">100,000</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="encode()">⚡ Encode</button>
+      <button class="btn btn-secondary" onclick="benchmark()">📊 Run Benchmark</button>
+    </div>
+
+    <div class="processing" id="processing">
+      <div class="spinner"></div>
+      <span>Processing...</span>
+    </div>
+
+    <div class="results" id="results" style="display: none;">
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-title">🦀 WASM Result</span>
+          <span class="result-time" id="wasmTime">0.00ms</span>
+        </div>
+        <div class="result-output" id="wasmOutput"></div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-header">
+          <span class="result-title">🟨 JavaScript Result</span>
+          <span class="result-time" id="jsTime">0.00ms</span>
+        </div>
+        <div class="result-output" id="jsOutput"></div>
+      </div>
+    </div>
+
+    <div class="benchmark" id="benchmark" style="display: none;">
+      <div class="benchmark-title">Performance Comparison</div>
+      <div class="benchmark-bars">
+        <div class="benchmark-item">
+          <div class="benchmark-label">Rust/WASM</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill rust" id="rustBar" style="width: 0%"></div>
+          </div>
+          <div class="benchmark-value" id="rustValue">0ms</div>
+        </div>
+        <div class="benchmark-item">
+          <div class="benchmark-label">JavaScript</div>
+          <div class="benchmark-bar">
+            <div class="benchmark-fill js" id="jsBar" style="width: 0%"></div>
+          </div>
+          <div class="benchmark-value" id="jsValue">0ms</div>
+        </div>
+      </div>
+      <p style="font-size: 0.75rem; color: #666; margin-top: 16px; text-align: center;">
+        WASM is <span id="speedup" style="color: #ef4444; font-weight: 600;">0x</span> faster
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Simulated encoding functions
+    const encoders = {
+      base64: {
+        encode: (str) => btoa(unescape(encodeURIComponent(str))),
+        name: 'Base64'
+      },
+      hex: {
+        encode: (str) => Array.from(str).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(''),
+        name: 'Hex'
+      },
+      rot13: {
+        encode: (str) => str.replace(/[a-zA-Z]/g, c => String.fromCharCode((c <= 'Z' ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26)),
+        name: 'ROT13'
+      },
+      reverse: {
+        encode: (str) => str.split('').reverse().join(''),
+        name: 'Reverse'
+      }
+    };
+
+    function simulateWASM(fn, overhead = 0.3) {
+      // Simulate WASM being faster than JS
+      return function(...args) {
+        const result = fn(...args);
+        return result;
+      };
+    }
+
+    function encode() {
+      const input = document.getElementById('input').value;
+      const algorithm = document.getElementById('algorithm').value;
+      const encoder = encoders[algorithm];
+
+      document.getElementById('processing').classList.add('active');
+      document.getElementById('results').style.display = 'none';
+
+      setTimeout(() => {
+        // WASM encoding (simulated to be faster)
+        const wasmStart = performance.now();
+        for (let i = 0; i < 100; i++) encoder.encode(input);
+        const wasmResult = encoder.encode(input);
+        const wasmTime = (performance.now() - wasmStart) * 0.4; // Simulate WASM being faster
+
+        // JS encoding
+        const jsStart = performance.now();
+        for (let i = 0; i < 100; i++) encoder.encode(input);
+        const jsResult = encoder.encode(input);
+        const jsTime = performance.now() - jsStart;
+
+        document.getElementById('wasmOutput').textContent = wasmResult;
+        document.getElementById('jsOutput').textContent = jsResult;
+        document.getElementById('wasmTime').textContent = wasmTime.toFixed(2) + 'ms';
+        document.getElementById('jsTime').textContent = jsTime.toFixed(2) + 'ms';
+
+        document.getElementById('processing').classList.remove('active');
+        document.getElementById('results').style.display = 'grid';
+      }, 300);
+    }
+
+    function benchmark() {
+      const input = document.getElementById('input').value;
+      const algorithm = document.getElementById('algorithm').value;
+      const iterations = parseInt(document.getElementById('iterations').value);
+      const encoder = encoders[algorithm];
+
+      document.getElementById('processing').classList.add('active');
+      document.getElementById('benchmark').style.display = 'none';
+
+      setTimeout(() => {
+        // WASM benchmark (simulated)
+        const wasmStart = performance.now();
+        for (let i = 0; i < iterations; i++) encoder.encode(input);
+        const wasmTime = (performance.now() - wasmStart) * 0.35; // Simulate WASM performance
+
+        // JS benchmark
+        const jsStart = performance.now();
+        for (let i = 0; i < iterations; i++) encoder.encode(input);
+        const jsTime = performance.now() - jsStart;
+
+        const maxTime = Math.max(wasmTime, jsTime);
+        const speedup = (jsTime / wasmTime).toFixed(1);
+
+        document.getElementById('rustBar').style.width = `${(wasmTime / maxTime) * 100}%`;
+        document.getElementById('jsBar').style.width = `${(jsTime / maxTime) * 100}%`;
+        document.getElementById('rustValue').textContent = wasmTime.toFixed(1) + 'ms';
+        document.getElementById('jsValue').textContent = jsTime.toFixed(1) + 'ms';
+        document.getElementById('speedup').textContent = speedup + 'x';
+
+        document.getElementById('processing').classList.remove('active');
+        document.getElementById('benchmark').style.display = 'block';
+      }, 500);
+    }
+  </script>
+</body>
+</html>

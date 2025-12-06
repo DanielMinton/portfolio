@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudForge - Infrastructure as Code</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0c1222 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #06b6d4, #22d3ee);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .infrastructure {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .resource {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .resource:hover {
+      border-color: #06b6d4;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(6, 182, 212, 0.2);
+    }
+    .resource.deploying {
+      border-color: #f59e0b;
+      animation: pulse 1s infinite;
+    }
+    .resource.deployed {
+      border-color: #22c55e;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .resource-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .resource-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    .resource-icon.compute { background: rgba(6, 182, 212, 0.2); }
+    .resource-icon.storage { background: rgba(168, 85, 247, 0.2); }
+    .resource-icon.network { background: rgba(34, 197, 94, 0.2); }
+    .resource-icon.database { background: rgba(249, 115, 22, 0.2); }
+    .resource-icon.security { background: rgba(239, 68, 68, 0.2); }
+    .resource-icon.cdn { background: rgba(236, 72, 153, 0.2); }
+    .resource-name { font-weight: 600; font-size: 0.875rem; }
+    .resource-type { font-size: 0.75rem; color: #888; }
+    .resource-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.75rem;
+    }
+    .stat { color: #888; }
+    .stat span { color: #22d3ee; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.625rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    .status-badge.pending { background: rgba(255,255,255,0.1); color: #888; }
+    .status-badge.deploying { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .status-badge.deployed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .terminal {
+      background: #0a0a0a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ef4444; }
+    .terminal-dot.yellow { background: #f59e0b; }
+    .terminal-dot.green { background: #22c55e; }
+    .terminal-title {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .terminal-body {
+      padding: 16px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.75rem;
+      height: 180px;
+      overflow-y: auto;
+    }
+    .log-line {
+      margin-bottom: 4px;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+    .log-time { color: #666; }
+    .log-success { color: #22c55e; }
+    .log-info { color: #06b6d4; }
+    .log-warn { color: #f59e0b; }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: white;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CloudForge</h1>
+    <p class="subtitle">Visual infrastructure-as-code deployment simulator</p>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="deployAll()">Deploy All Resources</button>
+      <button class="btn btn-secondary" onclick="resetAll()">Reset Infrastructure</button>
+    </div>
+
+    <div class="infrastructure" id="infrastructure">
+      <div class="resource" data-id="ec2" onclick="deployResource('ec2')">
+        <div class="resource-header">
+          <div class="resource-icon compute">🖥️</div>
+          <div>
+            <div class="resource-name">EC2 Instance</div>
+            <div class="resource-type">Compute</div>
+          </div>
+          <span class="status-badge pending" id="status-ec2">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">Type: <span>t3.large</span></div>
+          <div class="stat">vCPUs: <span>2</span></div>
+        </div>
+      </div>
+
+      <div class="resource" data-id="s3" onclick="deployResource('s3')">
+        <div class="resource-header">
+          <div class="resource-icon storage">📦</div>
+          <div>
+            <div class="resource-name">S3 Bucket</div>
+            <div class="resource-type">Storage</div>
+          </div>
+          <span class="status-badge pending" id="status-s3">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">Class: <span>Standard</span></div>
+          <div class="stat">Region: <span>us-east-1</span></div>
+        </div>
+      </div>
+
+      <div class="resource" data-id="vpc" onclick="deployResource('vpc')">
+        <div class="resource-header">
+          <div class="resource-icon network">🌐</div>
+          <div>
+            <div class="resource-name">VPC Network</div>
+            <div class="resource-type">Networking</div>
+          </div>
+          <span class="status-badge pending" id="status-vpc">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">CIDR: <span>10.0.0.0/16</span></div>
+          <div class="stat">Subnets: <span>4</span></div>
+        </div>
+      </div>
+
+      <div class="resource" data-id="rds" onclick="deployResource('rds')">
+        <div class="resource-header">
+          <div class="resource-icon database">🗄️</div>
+          <div>
+            <div class="resource-name">RDS Database</div>
+            <div class="resource-type">Database</div>
+          </div>
+          <span class="status-badge pending" id="status-rds">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">Engine: <span>PostgreSQL</span></div>
+          <div class="stat">Size: <span>db.t3.medium</span></div>
+        </div>
+      </div>
+
+      <div class="resource" data-id="iam" onclick="deployResource('iam')">
+        <div class="resource-header">
+          <div class="resource-icon security">🔐</div>
+          <div>
+            <div class="resource-name">IAM Role</div>
+            <div class="resource-type">Security</div>
+          </div>
+          <span class="status-badge pending" id="status-iam">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">Policies: <span>3</span></div>
+          <div class="stat">Trust: <span>EC2</span></div>
+        </div>
+      </div>
+
+      <div class="resource" data-id="cf" onclick="deployResource('cf')">
+        <div class="resource-header">
+          <div class="resource-icon cdn">⚡</div>
+          <div>
+            <div class="resource-name">CloudFront</div>
+            <div class="resource-type">CDN</div>
+          </div>
+          <span class="status-badge pending" id="status-cf">Pending</span>
+        </div>
+        <div class="resource-stats">
+          <div class="stat">Origins: <span>2</span></div>
+          <div class="stat">Cache: <span>Optimized</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-dot red"></div>
+        <div class="terminal-dot yellow"></div>
+        <div class="terminal-dot green"></div>
+        <span class="terminal-title">cloudforge deploy --watch</span>
+      </div>
+      <div class="terminal-body" id="logs">
+        <div class="log-line"><span class="log-info">CloudForge v2.4.1</span> initialized</div>
+        <div class="log-line"><span class="log-time">[00:00:00]</span> Waiting for deployment commands...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const resources = {
+      ec2: { name: 'EC2 Instance', time: 2000 },
+      s3: { name: 'S3 Bucket', time: 1000 },
+      vpc: { name: 'VPC Network', time: 1500 },
+      rds: { name: 'RDS Database', time: 3000 },
+      iam: { name: 'IAM Role', time: 800 },
+      cf: { name: 'CloudFront Distribution', time: 2500 }
+    };
+
+    const deployedResources = new Set();
+    let logCounter = 0;
+
+    function getTime() {
+      const mins = Math.floor(logCounter / 60).toString().padStart(2, '0');
+      const secs = (logCounter % 60).toString().padStart(2, '0');
+      return `[00:${mins}:${secs}]`;
+    }
+
+    function addLog(message, type = 'info') {
+      const logs = document.getElementById('logs');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.innerHTML = `<span class="log-time">${getTime()}</span> <span class="log-${type}">${message}</span>`;
+      logs.appendChild(line);
+      logs.scrollTop = logs.scrollHeight;
+      logCounter++;
+    }
+
+    function deployResource(id) {
+      if (deployedResources.has(id)) return;
+
+      const resource = resources[id];
+      const card = document.querySelector(`[data-id="${id}"]`);
+      const badge = document.getElementById(`status-${id}`);
+
+      card.classList.add('deploying');
+      badge.className = 'status-badge deploying';
+      badge.textContent = 'Deploying';
+
+      addLog(`Provisioning ${resource.name}...`, 'info');
+
+      setTimeout(() => {
+        addLog(`Configuring ${resource.name} parameters...`, 'info');
+      }, resource.time * 0.3);
+
+      setTimeout(() => {
+        addLog(`Validating ${resource.name} configuration...`, 'warn');
+      }, resource.time * 0.6);
+
+      setTimeout(() => {
+        card.classList.remove('deploying');
+        card.classList.add('deployed');
+        badge.className = 'status-badge deployed';
+        badge.textContent = 'Deployed';
+        deployedResources.add(id);
+        addLog(`✓ ${resource.name} deployed successfully`, 'success');
+      }, resource.time);
+    }
+
+    function deployAll() {
+      let delay = 0;
+      Object.keys(resources).forEach(id => {
+        if (!deployedResources.has(id)) {
+          setTimeout(() => deployResource(id), delay);
+          delay += 500;
+        }
+      });
+    }
+
+    function resetAll() {
+      deployedResources.clear();
+      logCounter = 0;
+      document.querySelectorAll('.resource').forEach(card => {
+        card.classList.remove('deploying', 'deployed');
+      });
+      document.querySelectorAll('.status-badge').forEach(badge => {
+        badge.className = 'status-badge pending';
+        badge.textContent = 'Pending';
+      });
+      document.getElementById('logs').innerHTML = `
+        <div class="log-line"><span class="log-info">CloudForge v2.4.1</span> initialized</div>
+        <div class="log-line"><span class="log-time">[00:00:00]</span> Infrastructure reset. Waiting for deployment commands...</div>
+      `;
+    }
+  </script>
+</body>
+</html>

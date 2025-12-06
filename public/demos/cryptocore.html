@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoCore - Cryptographic Utilities</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: rgba(255,255,255,0.03);
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: #fff; }
+    .tab.active {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+    .panel {
+      display: none;
+    }
+    .panel.active { display: block; }
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-group { margin-bottom: 16px; }
+    .input-label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 6px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: #3b82f6; }
+    textarea { height: 80px; resize: none; }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .btn-primary:hover { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .output {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.75rem;
+      word-break: break-all;
+      color: #60a5fa;
+      min-height: 60px;
+    }
+    .hash-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .hash-item {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .hash-name {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 6px;
+    }
+    .hash-value {
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.625rem;
+      color: #60a5fa;
+      word-break: break-all;
+    }
+    .key-display {
+      display: flex;
+      gap: 16px;
+    }
+    .key-section {
+      flex: 1;
+    }
+    .key-label {
+      font-size: 0.75rem;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .key-box {
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.625rem;
+      word-break: break-all;
+      height: 100px;
+      overflow-y: auto;
+    }
+    .key-box.public { color: #22c55e; }
+    .key-box.private { color: #f87171; }
+    .password-meter {
+      margin-top: 12px;
+    }
+    .meter-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .meter-fill {
+      height: 100%;
+      transition: all 0.3s;
+    }
+    .meter-text {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .entropy {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 8px;
+    }
+    .entropy span { color: #60a5fa; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CryptoCore</h1>
+    <p class="subtitle">Browser-based cryptographic utilities using Web Crypto API</p>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="hash" onclick="switchTab('hash')">Hash</button>
+      <button class="tab" data-tab="encrypt" onclick="switchTab('encrypt')">Encrypt</button>
+      <button class="tab" data-tab="keys" onclick="switchTab('keys')">Keys</button>
+      <button class="tab" data-tab="password" onclick="switchTab('password')">Password</button>
+    </div>
+
+    <!-- Hash Panel -->
+    <div class="panel active" id="panel-hash">
+      <div class="card">
+        <div class="card-title">🔐 Hash Generator</div>
+        <div class="input-group">
+          <div class="input-label">Input Text</div>
+          <textarea id="hashInput" placeholder="Enter text to hash...">Hello, CryptoCore!</textarea>
+        </div>
+        <button class="btn btn-primary" onclick="generateHashes()">Generate Hashes</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Hash Results</div>
+        <div class="hash-list" id="hashResults">
+          <div class="hash-item">
+            <div class="hash-name">SHA-256</div>
+            <div class="hash-value" id="sha256">-</div>
+          </div>
+          <div class="hash-item">
+            <div class="hash-name">SHA-384</div>
+            <div class="hash-value" id="sha384">-</div>
+          </div>
+          <div class="hash-item">
+            <div class="hash-name">SHA-512</div>
+            <div class="hash-value" id="sha512">-</div>
+          </div>
+          <div class="hash-item">
+            <div class="hash-name">SHA-1 (Legacy)</div>
+            <div class="hash-value" id="sha1">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Encrypt Panel -->
+    <div class="panel" id="panel-encrypt">
+      <div class="card">
+        <div class="card-title">🔒 AES-GCM Encryption</div>
+        <div class="input-group">
+          <div class="input-label">Plaintext</div>
+          <textarea id="encryptInput" placeholder="Enter text to encrypt...">Secret message!</textarea>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Password</div>
+          <input type="password" id="encryptPassword" placeholder="Enter encryption password" value="mySecretKey123">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="encryptText()">Encrypt</button>
+          <button class="btn btn-primary" onclick="decryptText()">Decrypt</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📤 Encrypted Output</div>
+        <div class="output" id="encryptOutput">Encrypted data will appear here...</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📥 Decrypted Output</div>
+        <div class="output" id="decryptOutput">Decrypted data will appear here...</div>
+      </div>
+    </div>
+
+    <!-- Keys Panel -->
+    <div class="panel" id="panel-keys">
+      <div class="card">
+        <div class="card-title">🔑 RSA Key Pair Generator</div>
+        <div class="btn-group" style="margin-bottom: 16px;">
+          <button class="btn btn-primary" onclick="generateKeyPair()">Generate New Key Pair</button>
+        </div>
+        <div class="key-display">
+          <div class="key-section">
+            <div class="key-label">Public Key</div>
+            <div class="key-box public" id="publicKey">Click "Generate" to create a key pair...</div>
+          </div>
+          <div class="key-section">
+            <div class="key-label">Private Key</div>
+            <div class="key-box private" id="privateKey">Click "Generate" to create a key pair...</div>
+          </div>
+        </div>
+        <div class="entropy">
+          Key Size: <span>2048 bits</span> | Algorithm: <span>RSA-OAEP</span> | Hash: <span>SHA-256</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Panel -->
+    <div class="panel" id="panel-password">
+      <div class="card">
+        <div class="card-title">🎲 Secure Password Generator</div>
+        <div class="input-group">
+          <div class="input-label">Generated Password</div>
+          <input type="text" id="generatedPassword" readonly>
+        </div>
+        <div class="password-meter">
+          <div class="meter-bar">
+            <div class="meter-fill" id="meterFill"></div>
+          </div>
+          <div class="meter-text" id="meterText">Strength: -</div>
+        </div>
+        <div class="btn-group" style="margin-top: 16px;">
+          <button class="btn btn-primary" onclick="generatePassword(16)">16 chars</button>
+          <button class="btn btn-primary" onclick="generatePassword(24)">24 chars</button>
+          <button class="btn btn-primary" onclick="generatePassword(32)">32 chars</button>
+        </div>
+        <div class="entropy" id="passwordEntropy">Entropy: -</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔍 Password Strength Analyzer</div>
+        <div class="input-group">
+          <div class="input-label">Check Password</div>
+          <input type="text" id="checkPassword" placeholder="Enter password to analyze" oninput="analyzePassword()">
+        </div>
+        <div class="password-meter">
+          <div class="meter-bar">
+            <div class="meter-fill" id="analyzeFill"></div>
+          </div>
+          <div class="meter-text" id="analyzeText">Enter a password to analyze</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById(`panel-${tab}`).classList.add('active');
+    }
+
+    async function hashString(str, algorithm) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      const hashBuffer = await crypto.subtle.digest(algorithm, data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function generateHashes() {
+      const input = document.getElementById('hashInput').value;
+      document.getElementById('sha256').textContent = await hashString(input, 'SHA-256');
+      document.getElementById('sha384').textContent = await hashString(input, 'SHA-384');
+      document.getElementById('sha512').textContent = await hashString(input, 'SHA-512');
+      document.getElementById('sha1').textContent = await hashString(input, 'SHA-1');
+    }
+
+    let encryptedData = null;
+    let iv = null;
+
+    async function getKeyFromPassword(password) {
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(password),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveBits', 'deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: encoder.encode('cryptocore-salt'),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function encryptText() {
+      try {
+        const input = document.getElementById('encryptInput').value;
+        const password = document.getElementById('encryptPassword').value;
+        const key = await getKeyFromPassword(password);
+        const encoder = new TextEncoder();
+
+        iv = crypto.getRandomValues(new Uint8Array(12));
+        encryptedData = await crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          encoder.encode(input)
+        );
+
+        const combined = new Uint8Array(iv.length + encryptedData.byteLength);
+        combined.set(iv);
+        combined.set(new Uint8Array(encryptedData), iv.length);
+
+        document.getElementById('encryptOutput').textContent = btoa(String.fromCharCode(...combined));
+      } catch (e) {
+        document.getElementById('encryptOutput').textContent = 'Encryption error: ' + e.message;
+      }
+    }
+
+    async function decryptText() {
+      try {
+        const password = document.getElementById('encryptPassword').value;
+        const key = await getKeyFromPassword(password);
+
+        if (!encryptedData || !iv) {
+          document.getElementById('decryptOutput').textContent = 'No encrypted data. Encrypt something first!';
+          return;
+        }
+
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          encryptedData
+        );
+
+        document.getElementById('decryptOutput').textContent = new TextDecoder().decode(decrypted);
+      } catch (e) {
+        document.getElementById('decryptOutput').textContent = 'Decryption failed. Wrong password?';
+      }
+    }
+
+    async function generateKeyPair() {
+      const keyPair = await crypto.subtle.generateKey(
+        {
+          name: 'RSA-OAEP',
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([1, 0, 1]),
+          hash: 'SHA-256'
+        },
+        true,
+        ['encrypt', 'decrypt']
+      );
+
+      const publicKey = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+      const privateKey = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+
+      document.getElementById('publicKey').textContent = btoa(String.fromCharCode(...new Uint8Array(publicKey)));
+      document.getElementById('privateKey').textContent = btoa(String.fromCharCode(...new Uint8Array(privateKey)));
+    }
+
+    function generatePassword(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      const array = new Uint32Array(length);
+      crypto.getRandomValues(array);
+      const password = Array.from(array, x => chars[x % chars.length]).join('');
+
+      document.getElementById('generatedPassword').value = password;
+
+      const entropy = Math.log2(Math.pow(chars.length, length));
+      document.getElementById('passwordEntropy').innerHTML = `Entropy: <span>${entropy.toFixed(0)} bits</span>`;
+
+      const fill = document.getElementById('meterFill');
+      fill.style.width = '100%';
+      fill.style.background = 'linear-gradient(90deg, #22c55e, #4ade80)';
+      document.getElementById('meterText').textContent = 'Strength: Excellent';
+    }
+
+    function analyzePassword() {
+      const password = document.getElementById('checkPassword').value;
+      let score = 0;
+      let feedback = [];
+
+      if (password.length >= 8) score += 1;
+      if (password.length >= 12) score += 1;
+      if (password.length >= 16) score += 1;
+      if (/[a-z]/.test(password)) score += 1;
+      if (/[A-Z]/.test(password)) score += 1;
+      if (/[0-9]/.test(password)) score += 1;
+      if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+
+      const fill = document.getElementById('analyzeFill');
+      const text = document.getElementById('analyzeText');
+      const percentage = (score / 7) * 100;
+
+      fill.style.width = percentage + '%';
+
+      if (score <= 2) {
+        fill.style.background = '#ef4444';
+        text.textContent = 'Strength: Weak';
+      } else if (score <= 4) {
+        fill.style.background = '#f59e0b';
+        text.textContent = 'Strength: Fair';
+      } else if (score <= 5) {
+        fill.style.background = '#22c55e';
+        text.textContent = 'Strength: Good';
+      } else {
+        fill.style.background = 'linear-gradient(90deg, #22c55e, #4ade80)';
+        text.textContent = 'Strength: Excellent';
+      }
+
+      if (!password) {
+        fill.style.width = '0%';
+        text.textContent = 'Enter a password to analyze';
+      }
+    }
+
+    // Initialize
+    generateHashes();
+    generatePassword(16);
+  </script>
+</body>
+</html>
