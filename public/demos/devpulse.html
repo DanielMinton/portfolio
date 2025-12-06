@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevPulse - Developer Analytics Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .time-range {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.03);
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .time-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 0.75rem;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .time-btn:hover { color: #fff; }
+    .time-btn.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .stat-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .stat-icon.green { background: rgba(16, 185, 129, 0.2); }
+    .stat-icon.blue { background: rgba(59, 130, 246, 0.2); }
+    .stat-icon.purple { background: rgba(139, 92, 246, 0.2); }
+    .stat-icon.orange { background: rgba(249, 115, 22, 0.2); }
+    .stat-change {
+      font-size: 0.625rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .stat-change.up { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .stat-change.down { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .panel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    .panel-body { padding: 16px; }
+    .chart-container {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 16px 0;
+    }
+    .chart-bar {
+      flex: 1;
+      background: linear-gradient(to top, #10b981, #34d399);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.5s ease;
+      position: relative;
+      cursor: pointer;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+    .chart-bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.625rem;
+      color: #888;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .chart-bar:hover::after { opacity: 1; }
+    .chart-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.625rem;
+      color: #666;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .activity-list { max-height: 240px; overflow-y: auto; }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+    .activity-icon.commit { background: rgba(16, 185, 129, 0.2); }
+    .activity-icon.pr { background: rgba(139, 92, 246, 0.2); }
+    .activity-icon.issue { background: rgba(249, 115, 22, 0.2); }
+    .activity-icon.review { background: rgba(59, 130, 246, 0.2); }
+    .activity-details { flex: 1; }
+    .activity-title { font-size: 0.75rem; color: #fff; }
+    .activity-meta { font-size: 0.625rem; color: #666; }
+    .activity-time { font-size: 0.625rem; color: #888; }
+    .languages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .language-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .language-name {
+      width: 80px;
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .language-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .language-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .language-percent {
+      width: 40px;
+      text-align: right;
+      font-size: 0.75rem;
+      color: #fff;
+    }
+    .streak-card {
+      text-align: center;
+      padding: 24px;
+    }
+    .streak-value {
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .streak-label {
+      font-size: 0.875rem;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    .streak-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .streak-day {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+    }
+    .streak-day.active { background: rgba(16, 185, 129, 0.4); }
+    .streak-day.today {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-row">
+      <div>
+        <h1>DevPulse</h1>
+        <p class="subtitle">Real-time developer productivity analytics</p>
+      </div>
+      <div class="time-range">
+        <button class="time-btn" onclick="setRange('day')">Day</button>
+        <button class="time-btn active" onclick="setRange('week')">Week</button>
+        <button class="time-btn" onclick="setRange('month')">Month</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon green">📊</div>
+          <span class="stat-change up">+12%</span>
+        </div>
+        <div class="stat-value" id="commits">247</div>
+        <div class="stat-label">Commits</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon purple">🔀</div>
+          <span class="stat-change up">+8%</span>
+        </div>
+        <div class="stat-value" id="prs">34</div>
+        <div class="stat-label">Pull Requests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon blue">👀</div>
+          <span class="stat-change up">+23%</span>
+        </div>
+        <div class="stat-value" id="reviews">89</div>
+        <div class="stat-label">Code Reviews</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon orange">📝</div>
+          <span class="stat-change down">-5%</span>
+        </div>
+        <div class="stat-value" id="loc">4.2k</div>
+        <div class="stat-label">Lines Changed</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-header">📈 Commit Activity</div>
+        <div class="panel-body">
+          <div class="chart-container" id="chart"></div>
+          <div class="chart-labels">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">🔥 Current Streak</div>
+        <div class="panel-body streak-card">
+          <div class="streak-value" id="streak">23</div>
+          <div class="streak-label">days</div>
+          <div class="streak-calendar" id="calendar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-header">🕐 Recent Activity</div>
+        <div class="panel-body">
+          <div class="activity-list" id="activityList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">💻 Languages</div>
+        <div class="panel-body">
+          <div class="languages-list" id="languages"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const activities = [
+      { type: 'commit', title: 'feat: Add user authentication', repo: 'project-alpha', time: '2m ago' },
+      { type: 'pr', title: 'Merge feature/dashboard', repo: 'analytics-app', time: '15m ago' },
+      { type: 'review', title: 'Review: API refactoring', repo: 'backend-api', time: '1h ago' },
+      { type: 'issue', title: 'Bug: Fix memory leak', repo: 'core-lib', time: '2h ago' },
+      { type: 'commit', title: 'chore: Update dependencies', repo: 'project-alpha', time: '3h ago' },
+      { type: 'pr', title: 'Add unit tests for auth', repo: 'project-alpha', time: '4h ago' },
+      { type: 'review', title: 'Review: Database migrations', repo: 'backend-api', time: '5h ago' },
+    ];
+
+    const languages = [
+      { name: 'TypeScript', percent: 42, color: '#3178c6' },
+      { name: 'Python', percent: 28, color: '#3572A5' },
+      { name: 'Rust', percent: 15, color: '#dea584' },
+      { name: 'Go', percent: 10, color: '#00ADD8' },
+      { name: 'Other', percent: 5, color: '#666' }
+    ];
+
+    const chartData = [35, 42, 28, 55, 48, 15, 22];
+
+    function renderChart() {
+      const chart = document.getElementById('chart');
+      const max = Math.max(...chartData);
+      chart.innerHTML = chartData.map((val, i) =>
+        `<div class="chart-bar" style="height: ${(val / max) * 100}%" data-value="${val}"></div>`
+      ).join('');
+    }
+
+    function renderActivities() {
+      const list = document.getElementById('activityList');
+      const icons = { commit: '📝', pr: '🔀', review: '👀', issue: '🐛' };
+      list.innerHTML = activities.map(a => `
+        <div class="activity-item">
+          <div class="activity-icon ${a.type}">${icons[a.type]}</div>
+          <div class="activity-details">
+            <div class="activity-title">${a.title}</div>
+            <div class="activity-meta">${a.repo}</div>
+          </div>
+          <div class="activity-time">${a.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderLanguages() {
+      const list = document.getElementById('languages');
+      list.innerHTML = languages.map(l => `
+        <div class="language-item">
+          <div class="language-name">${l.name}</div>
+          <div class="language-bar">
+            <div class="language-fill" style="width: ${l.percent}%; background: ${l.color}"></div>
+          </div>
+          <div class="language-percent">${l.percent}%</div>
+        </div>
+      `).join('');
+    }
+
+    function renderCalendar() {
+      const calendar = document.getElementById('calendar');
+      const days = [];
+      for (let i = 0; i < 28; i++) {
+        const isActive = Math.random() > 0.3;
+        const isToday = i === 27;
+        days.push(`<div class="streak-day ${isActive ? 'active' : ''} ${isToday ? 'today' : ''}"></div>`);
+      }
+      calendar.innerHTML = days.join('');
+    }
+
+    function setRange(range) {
+      document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Simulate data change
+      const multipliers = { day: 0.15, week: 1, month: 4.3 };
+      const m = multipliers[range];
+
+      document.getElementById('commits').textContent = Math.round(247 * m);
+      document.getElementById('prs').textContent = Math.round(34 * m);
+      document.getElementById('reviews').textContent = Math.round(89 * m);
+      document.getElementById('loc').textContent = (4.2 * m).toFixed(1) + 'k';
+
+      // Animate chart
+      const newData = chartData.map(() => Math.floor(Math.random() * 50) + 10);
+      const max = Math.max(...newData);
+      document.querySelectorAll('.chart-bar').forEach((bar, i) => {
+        bar.style.height = `${(newData[i] / max) * 100}%`;
+        bar.dataset.value = newData[i];
+      });
+    }
+
+    // Initialize
+    renderChart();
+    renderActivities();
+    renderLanguages();
+    renderCalendar();
+
+    // Simulate real-time updates
+    setInterval(() => {
+      const commits = document.getElementById('commits');
+      commits.textContent = parseInt(commits.textContent) + Math.floor(Math.random() * 3);
+    }, 5000);
+  </script>
+</body>
+</html>

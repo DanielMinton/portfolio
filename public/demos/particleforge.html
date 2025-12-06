@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParticleForge - Physics Simulation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 20px;
+      z-index: 10;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #f97316, #fb923c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 16px; }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-label {
+      font-size: 0.75rem;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); }
+    .btn.active {
+      background: rgba(249, 115, 22, 0.3);
+      border-color: #f97316;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: #f97316;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .stats {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 10;
+    }
+    .stat {
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f97316;
+    }
+    .stat-label {
+      font-size: 0.625rem;
+      color: #888;
+      text-transform: uppercase;
+    }
+    .instructions {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.75rem;
+      color: #888;
+      z-index: 10;
+    }
+    .instructions strong { color: #f97316; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <canvas id="canvas"></canvas>
+
+    <div class="overlay">
+      <h1>ParticleForge</h1>
+      <p class="subtitle">Interactive GPU-accelerated particle physics</p>
+
+      <div class="controls">
+        <div class="control-group">
+          <div class="control-label">Force Mode</div>
+          <div class="btn-group">
+            <button class="btn active" data-mode="attract" onclick="setMode('attract')">Attract</button>
+            <button class="btn" data-mode="repel" onclick="setMode('repel')">Repel</button>
+            <button class="btn" data-mode="orbit" onclick="setMode('orbit')">Orbit</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Gravity</span>
+            <span id="gravityValue">0.5</span>
+          </div>
+          <input type="range" id="gravity" min="0" max="100" value="50" oninput="updateGravity()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Friction</span>
+            <span id="frictionValue">0.98</span>
+          </div>
+          <input type="range" id="friction" min="90" max="100" value="98" oninput="updateFriction()">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Particle Size</span>
+            <span id="sizeValue">3</span>
+          </div>
+          <input type="range" id="particleSize" min="1" max="8" value="3" oninput="updateSize()">
+        </div>
+
+        <div class="btn-group" style="margin-top: 8px;">
+          <button class="btn" onclick="reset()">Reset</button>
+          <button class="btn" onclick="explode()">Explode</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value" id="particles">0</div>
+        <div class="stat-label">Particles</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="fps">60</div>
+        <div class="stat-label">FPS</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="energy">0</div>
+        <div class="stat-label">Energy</div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <strong>Click</strong> to spawn particles<br>
+      <strong>Hold & drag</strong> to apply force<br>
+      <strong>Double-click</strong> for burst
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let particles = [];
+    let mouseX = 0, mouseY = 0;
+    let isMouseDown = false;
+    let mode = 'attract';
+    let gravity = 0.5;
+    let friction = 0.98;
+    let particleSize = 3;
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    const colors = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5'];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor(x, y, vx = 0, vy = 0) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx + (Math.random() - 0.5) * 2;
+        this.vy = vy + (Math.random() - 0.5) * 2;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 1;
+        this.decay = 0.001 + Math.random() * 0.002;
+      }
+
+      update() {
+        if (isMouseDown) {
+          const dx = mouseX - this.x;
+          const dy = mouseY - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const force = Math.min(gravity / (dist * 0.1), 2);
+
+          if (mode === 'attract') {
+            this.vx += (dx / dist) * force;
+            this.vy += (dy / dist) * force;
+          } else if (mode === 'repel') {
+            this.vx -= (dx / dist) * force;
+            this.vy -= (dy / dist) * force;
+          } else if (mode === 'orbit') {
+            this.vx += (dy / dist) * force * 0.5;
+            this.vy -= (dx / dist) * force * 0.5;
+          }
+        }
+
+        // Apply world gravity
+        this.vy += 0.1;
+
+        // Apply friction
+        this.vx *= friction;
+        this.vy *= friction;
+
+        // Update position
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounce off walls
+        if (this.x < 0) { this.x = 0; this.vx *= -0.8; }
+        if (this.x > width) { this.x = width; this.vx *= -0.8; }
+        if (this.y < 0) { this.y = 0; this.vy *= -0.8; }
+        if (this.y > height) { this.y = height; this.vy *= -0.8; }
+
+        // Decay
+        this.life -= this.decay;
+
+        return this.life > 0;
+      }
+
+      draw() {
+        const alpha = this.life;
+        const size = particleSize * (0.5 + this.life * 0.5);
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+
+        // Glow effect
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, size * 2, 0, Math.PI * 2);
+        ctx.globalAlpha = alpha * 0.2;
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+      }
+
+      getEnergy() {
+        return Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+      }
+    }
+
+    function spawnParticles(x, y, count = 5, spread = 2) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * spread;
+        particles.push(new Particle(
+          x + (Math.random() - 0.5) * 10,
+          y + (Math.random() - 0.5) * 10,
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed
+        ));
+      }
+    }
+
+    function render() {
+      // Semi-transparent clear for trails
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Update and draw particles
+      let totalEnergy = 0;
+      particles = particles.filter(p => {
+        const alive = p.update();
+        if (alive) {
+          p.draw();
+          totalEnergy += p.getEnergy();
+        }
+        return alive;
+      });
+
+      // Spawn particles while mouse is down
+      if (isMouseDown) {
+        spawnParticles(mouseX, mouseY, 3);
+      }
+
+      // Update stats
+      document.getElementById('particles').textContent = particles.length;
+      document.getElementById('energy').textContent = Math.round(totalEnergy);
+
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        document.getElementById('fps').textContent = frameCount;
+        frameCount = 0;
+        lastTime = now;
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.querySelectorAll('[data-mode]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === m);
+      });
+    }
+
+    function updateGravity() {
+      gravity = document.getElementById('gravity').value / 100;
+      document.getElementById('gravityValue').textContent = gravity.toFixed(2);
+    }
+
+    function updateFriction() {
+      friction = document.getElementById('friction').value / 100;
+      document.getElementById('frictionValue').textContent = friction.toFixed(2);
+    }
+
+    function updateSize() {
+      particleSize = parseInt(document.getElementById('particleSize').value);
+      document.getElementById('sizeValue').textContent = particleSize;
+    }
+
+    function reset() {
+      particles = [];
+    }
+
+    function explode() {
+      particles.forEach(p => {
+        const dx = p.x - width / 2;
+        const dy = p.y - height / 2;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        p.vx += (dx / dist) * 20;
+        p.vy += (dy / dist) * 20;
+      });
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      isMouseDown = true;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isMouseDown = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    canvas.addEventListener('dblclick', (e) => {
+      spawnParticles(e.clientX, e.clientY, 50, 8);
+    });
+
+    window.addEventListener('resize', resize);
+
+    resize();
+    render();
+
+    // Initial particles
+    for (let i = 0; i < 100; i++) {
+      particles.push(new Particle(
+        Math.random() * width,
+        Math.random() * height
+      ));
+    }
+  </script>
+</body>
+</html>

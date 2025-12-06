@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APIGuard - Security Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a0a1a 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, #ef4444, #f87171);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { color: #888; font-size: 0.875rem; margin-bottom: 24px; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .stat-value.green { color: #22c55e; }
+    .stat-value.red { color: #ef4444; }
+    .stat-value.yellow { color: #f59e0b; }
+    .stat-value.blue { color: #3b82f6; }
+    .stat-label { font-size: 0.75rem; color: #888; }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .panel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .panel-body { padding: 16px; }
+    .threat-list { max-height: 200px; overflow-y: auto; }
+    .threat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .threat-item.blocked {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.2);
+    }
+    .threat-icon { font-size: 1rem; }
+    .threat-details { flex: 1; }
+    .threat-type { font-weight: 600; color: #fff; }
+    .threat-source { color: #888; font-size: 0.625rem; }
+    .threat-status {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .threat-status.active { background: rgba(239, 68, 68, 0.3); color: #f87171; }
+    .threat-status.blocked { background: rgba(34, 197, 94, 0.3); color: #4ade80; }
+    .rate-limit-viz {
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      padding: 12px 0;
+    }
+    .rate-bar {
+      flex: 1;
+      background: linear-gradient(to top, #3b82f6, #60a5fa);
+      border-radius: 2px;
+      transition: height 0.3s ease;
+      min-height: 4px;
+    }
+    .rate-bar.warning { background: linear-gradient(to top, #f59e0b, #fbbf24); }
+    .rate-bar.danger { background: linear-gradient(to top, #ef4444, #f87171); }
+    .endpoint-list { font-size: 0.75rem; }
+    .endpoint-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .endpoint-method {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.625rem;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+    .endpoint-method.get { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .endpoint-method.post { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .endpoint-method.put { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .endpoint-method.delete { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .endpoint-path { color: #888; font-family: monospace; }
+    .endpoint-status { color: #22c55e; }
+    .auth-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .auth-indicator::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+    .btn:hover { background: rgba(239, 68, 68, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>APIGuard</h1>
+    <p class="subtitle">Real-time API security monitoring & threat detection</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value green" id="requests">12,847</div>
+        <div class="stat-label">Requests/min</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value red" id="blocked">23</div>
+        <div class="stat-label">Blocked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value yellow" id="rateLimit">847</div>
+        <div class="stat-label">Rate Limited</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value blue" id="latency">42ms</div>
+        <div class="stat-label">Avg Latency</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-header">
+          🛡️ Live Threat Feed
+          <button class="btn" style="margin-left: auto;" onclick="simulateAttack()">Simulate Attack</button>
+        </div>
+        <div class="panel-body">
+          <div class="threat-list" id="threatList">
+            <div class="threat-item blocked">
+              <span class="threat-icon">🚫</span>
+              <div class="threat-details">
+                <div class="threat-type">SQL Injection Attempt</div>
+                <div class="threat-source">192.168.1.42 → /api/users</div>
+              </div>
+              <span class="threat-status blocked">Blocked</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">📊 Rate Limit Monitor</div>
+        <div class="panel-body">
+          <div class="rate-limit-viz" id="rateViz"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.625rem; color: #666;">
+            <span>60s ago</span>
+            <span>Now</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">🔑 Authentication Status</div>
+        <div class="panel-body">
+          <div class="auth-indicator">
+            <span style="font-size: 0.875rem; color: #22c55e;">JWT Validation Active</span>
+          </div>
+          <div class="endpoint-list">
+            <div class="endpoint-item">
+              <div>
+                <span class="endpoint-method get">GET</span>
+                <span class="endpoint-path">/api/users</span>
+              </div>
+              <span class="endpoint-status">✓ Protected</span>
+            </div>
+            <div class="endpoint-item">
+              <div>
+                <span class="endpoint-method post">POST</span>
+                <span class="endpoint-path">/api/auth</span>
+              </div>
+              <span class="endpoint-status">✓ Public</span>
+            </div>
+            <div class="endpoint-item">
+              <div>
+                <span class="endpoint-method put">PUT</span>
+                <span class="endpoint-path">/api/settings</span>
+              </div>
+              <span class="endpoint-status">✓ Admin</span>
+            </div>
+            <div class="endpoint-item">
+              <div>
+                <span class="endpoint-method delete">DELETE</span>
+                <span class="endpoint-path">/api/data/:id</span>
+              </div>
+              <span class="endpoint-status">✓ Protected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">🌍 Geographic Distribution</div>
+        <div class="panel-body">
+          <div id="geoList" style="font-size: 0.75rem;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const threats = [
+      { type: 'SQL Injection Attempt', icon: '💉' },
+      { type: 'XSS Attack Detected', icon: '⚠️' },
+      { type: 'Brute Force Attempt', icon: '🔨' },
+      { type: 'Invalid Token Usage', icon: '🎫' },
+      { type: 'Rate Limit Exceeded', icon: '⏱️' },
+      { type: 'Suspicious User Agent', icon: '🤖' }
+    ];
+
+    const geoData = [
+      { country: 'United States', requests: 4521, flag: '🇺🇸' },
+      { country: 'Germany', requests: 2134, flag: '🇩🇪' },
+      { country: 'Japan', requests: 1876, flag: '🇯🇵' },
+      { country: 'Brazil', requests: 943, flag: '🇧🇷' },
+      { country: 'Unknown', requests: 234, flag: '🌐' }
+    ];
+
+    function randomIP() {
+      return `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+    }
+
+    function randomEndpoint() {
+      const endpoints = ['/api/users', '/api/auth', '/api/data', '/api/settings', '/api/upload'];
+      return endpoints[Math.floor(Math.random() * endpoints.length)];
+    }
+
+    function addThreat(threat, blocked = true) {
+      const list = document.getElementById('threatList');
+      const item = document.createElement('div');
+      item.className = `threat-item ${blocked ? 'blocked' : ''}`;
+      item.innerHTML = `
+        <span class="threat-icon">${blocked ? '🚫' : threat.icon}</span>
+        <div class="threat-details">
+          <div class="threat-type">${threat.type}</div>
+          <div class="threat-source">${randomIP()} → ${randomEndpoint()}</div>
+        </div>
+        <span class="threat-status ${blocked ? 'blocked' : 'active'}">${blocked ? 'Blocked' : 'Active'}</span>
+      `;
+      list.insertBefore(item, list.firstChild);
+      if (list.children.length > 8) list.removeChild(list.lastChild);
+
+      if (blocked) {
+        const blockedEl = document.getElementById('blocked');
+        blockedEl.textContent = parseInt(blockedEl.textContent) + 1;
+      }
+    }
+
+    function simulateAttack() {
+      const threat = threats[Math.floor(Math.random() * threats.length)];
+      addThreat(threat, Math.random() > 0.2);
+    }
+
+    // Rate limit visualization
+    const rateData = Array(30).fill(0).map(() => Math.random() * 100);
+
+    function updateRateViz() {
+      const viz = document.getElementById('rateViz');
+      viz.innerHTML = '';
+      rateData.push(Math.random() * 100);
+      rateData.shift();
+
+      rateData.forEach(value => {
+        const bar = document.createElement('div');
+        bar.className = 'rate-bar';
+        if (value > 80) bar.classList.add('danger');
+        else if (value > 60) bar.classList.add('warning');
+        bar.style.height = `${value}%`;
+        viz.appendChild(bar);
+      });
+    }
+
+    function updateStats() {
+      document.getElementById('requests').textContent = (12000 + Math.floor(Math.random() * 2000)).toLocaleString();
+      document.getElementById('rateLimit').textContent = Math.floor(800 + Math.random() * 200);
+      document.getElementById('latency').textContent = Math.floor(35 + Math.random() * 20) + 'ms';
+    }
+
+    function renderGeoData() {
+      const list = document.getElementById('geoList');
+      const total = geoData.reduce((sum, g) => sum + g.requests, 0);
+      list.innerHTML = geoData.map(g => `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span>${g.flag}</span>
+          <span style="flex: 1; color: #888;">${g.country}</span>
+          <div style="width: 100px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+            <div style="width: ${(g.requests / total) * 100}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
+          </div>
+          <span style="color: #3b82f6; width: 40px; text-align: right;">${Math.round((g.requests / total) * 100)}%</span>
+        </div>
+      `).join('');
+    }
+
+    updateRateViz();
+    renderGeoData();
+    setInterval(updateRateViz, 1000);
+    setInterval(updateStats, 2000);
+    setInterval(() => {
+      if (Math.random() > 0.7) simulateAttack();
+    }, 3000);
+  </script>
+</body>
+</html>
