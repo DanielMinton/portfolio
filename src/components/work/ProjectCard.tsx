@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Github, ExternalLink, Sparkles } from "lucide-react";
 import type { Project } from "@/data/projects";
+import { projectLogos } from "./ProjectLogos";
 
 interface ProjectCardProps {
   project: Project;
@@ -61,18 +62,25 @@ export function ProjectCard({ project, index, onOpenDemo }: ProjectCardProps) {
             transition={{ duration: 0.3 }}
           />
 
-          {/* Project initial */}
+          {/* Project Logo */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <motion.span
-              className="text-6xl font-bold text-white/10"
+            <motion.div
+              className="w-20 h-20 text-white"
               animate={{
-                scale: isHovered ? 1.1 : 1,
-                opacity: isHovered ? 0.15 : 0.1,
+                scale: isHovered ? 1.15 : 1,
+                opacity: isHovered ? 0.9 : 0.7,
               }}
               transition={{ duration: 0.3 }}
             >
-              {project.title[0]}
-            </motion.span>
+              {projectLogos[project.id] ? (
+                (() => {
+                  const LogoComponent = projectLogos[project.id];
+                  return <LogoComponent className="w-full h-full drop-shadow-lg" />;
+                })()
+              ) : (
+                <span className="text-6xl font-bold text-white/20">{project.title[0]}</span>
+              )}
+            </motion.div>
           </div>
 
           {/* Featured badge */}
