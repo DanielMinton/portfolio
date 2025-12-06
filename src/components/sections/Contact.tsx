@@ -84,7 +84,7 @@ export function Contact() {
 
     try {
       // Submit to Formspree - replace YOUR_FORM_ID with actual ID from formspree.io
-      const response = await fetch("https://formspree.io/f/xwpkvgvd", {
+      const response = await fetch("https://formspree.io/f/xdkqdvpn", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
