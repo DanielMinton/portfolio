@@ -44,7 +44,7 @@ const socialLinks = [
   {
     icon: Github,
     label: "GitHub",
-    href: "https://github.com/TheModernOpossum",
+    href: "https://github.com/DanielMinton",
   },
   {
     icon: Linkedin,

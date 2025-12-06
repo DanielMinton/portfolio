@@ -109,7 +109,7 @@ export function Work() {
             Want to see more? Check out my full portfolio on GitHub.
           </p>
           <Button
-            href="https://github.com/TheModernOpossum?tab=repositories"
+            href="https://github.com/DanielMinton?tab=repositories"
             variant="outline"
             size="lg"
           >
