@@ -17,7 +17,7 @@ const navItems = [
 const socialLinks = [
   {
     icon: Github,
-    href: "https://github.com/TheModernOpossum",
+    href: "https://github.com/DanielMinton",
     label: "GitHub",
   },
   {
