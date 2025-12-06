@@ -112,7 +112,7 @@ export function About() {
               </p>
               <p>
                 Now I&apos;m building AI-augmented tools that combine LLM orchestration
-                with solid engineering fundamentals. Not chatbots—real agent workflows
+                with solid engineering fundamentals. Not chatbots ~ real agent workflows
                 that parse documents, validate data, and make decisions with human oversight.
                 The kind of systems that need both AI intuition and production reliability.
               </p>
