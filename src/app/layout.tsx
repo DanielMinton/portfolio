@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://danielminton.com"),
   title: "Daniel Minton | Creative Technologist & Full-Stack Engineer",
   description:
     "Full-stack engineer with 10+ years building production software. Founder, builder, and creative technologist based in San Francisco.",
@@ -35,12 +36,14 @@ export const metadata: Metadata = {
     description:
       "Full-stack engineer with 10+ years building production software.",
     siteName: "Daniel Minton",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Daniel Minton | Creative Technologist",
     description:
       "Full-stack engineer with 10+ years building production software.",
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
