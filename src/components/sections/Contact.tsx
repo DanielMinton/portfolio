@@ -54,17 +54,17 @@ const socialLinks = [
   {
     icon: Facebook,
     label: "Facebook",
-    href: "https://facebook.com/",
+    href: "https://facebook.com/JeskaiMage",
   },
   {
     icon: Instagram,
     label: "Instagram",
-    href: "https://instagram.com/",
+    href: "https://instagram.com/themodernopossum",
   },
   {
     icon: Youtube,
     label: "YouTube",
-    href: "https://youtube.com/",
+    href: "https://youtube.com/@OhanaRecovery",
   },
 ];
 
