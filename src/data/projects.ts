@@ -92,14 +92,14 @@ export const projects: Project[] = [
   {
     id: "geostream",
     title: "GeoStream",
-    description: "Real-time geospatial data streaming with 3D terrain rendering",
-    longDescription: "Live mapping platform that streams geospatial data onto 3D terrain. Supports custom data layers, time-series playback, and WebGL-accelerated rendering of millions of points.",
-    tags: ["Mapbox GL", "Three.js", "WebSockets", "PostGIS", "Deck.gl"],
+    description: "Live flight tracking with real-time ADS-B data visualization",
+    longDescription: "Real-time aircraft tracker powered by OpenSky Network API. Shows live flight positions with altitude-coded colors, callsigns, speed, heading, and vertical rate. Supports region filtering (USA, Europe, Asia, World) with 30-second auto-refresh.",
+    tags: ["Canvas API", "OpenSky API", "JavaScript", "ADS-B", "Real-time"],
     category: "3d-viz",
     github: "https://github.com/DanielMinton/geostream",
     demo: "https://danielminton.github.io/GeoStream/",
     featured: false,
-    gradient: "from-green-500 to-emerald-500",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     id: "particleforge",
