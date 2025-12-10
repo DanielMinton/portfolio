@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { experience } from "@/data/experience";
 import { Button } from "@/components/ui/Button";
-import { Briefcase, MapPin, Calendar, Download } from "lucide-react";
+import { Briefcase, MapPin, Calendar, ExternalLink } from "lucide-react";
 
 export function Experience() {
   return (
@@ -22,9 +22,9 @@ export function Experience() {
           <p className="text-zinc-400 max-w-2xl mx-auto text-lg mb-6">
             A decade of building production software and leading technical teams.
           </p>
-          <Button href="/Daniel_Minton_Resume.pdf" variant="outline" size="md">
-            <Download size={16} className="mr-2" />
-            Download Resume
+          <Button href="https://calendly.com/danielminton" variant="outline" size="md">
+            <ExternalLink size={16} className="mr-2" />
+            Schedule a Call
           </Button>
         </motion.div>
 
