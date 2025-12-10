@@ -1,9 +1,35 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, Component, ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
+
+// Error boundary to catch Three.js crashes
+class ThreeErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.warn("Three.js render error:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 function Particles({ count = 5000 }) {
   const ref = useRef<THREE.Points>(null);
@@ -71,18 +97,29 @@ function GlowingSphere() {
   );
 }
 
+// Static fallback for when Three.js fails
+function StaticFallback() {
+  return (
+    <div className="absolute inset-0 -z-10 bg-zinc-950">
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-transparent to-indigo-950/20" />
+    </div>
+  );
+}
+
 export default function ParticleField() {
   return (
-    <div className="absolute inset-0 -z-10">
-      <Canvas
-        camera={{ position: [0, 0, 6], fov: 60 }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ background: "transparent" }}
-      >
-        <ambientLight intensity={0.5} />
-        <Particles />
-        <GlowingSphere />
-      </Canvas>
-    </div>
+    <ThreeErrorBoundary fallback={<StaticFallback />}>
+      <div className="absolute inset-0 -z-10">
+        <Canvas
+          camera={{ position: [0, 0, 6], fov: 60 }}
+          gl={{ antialias: true, alpha: true }}
+          style={{ background: "transparent" }}
+        >
+          <ambientLight intensity={0.5} />
+          <Particles />
+          <GlowingSphere />
+        </Canvas>
+      </div>
+    </ThreeErrorBoundary>
   );
 }
