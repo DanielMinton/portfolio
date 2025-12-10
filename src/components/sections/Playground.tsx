@@ -260,22 +260,25 @@ function TerminalDemo() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-zinc-950 rounded-lg p-4 h-48 overflow-auto font-mono text-xs">
-          {lines.map((line, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={
-                line.startsWith("✓")
-                  ? "text-green-400"
-                  : line.startsWith("$")
-                    ? "text-violet-400"
-                    : "text-zinc-400"
-              }
-            >
-              {line || "\u00A0"}
-            </motion.div>
-          ))}
+          {lines.map((line, i) => {
+            const text = line ?? "";
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={
+                  text.startsWith("✓")
+                    ? "text-green-400"
+                    : text.startsWith("$")
+                      ? "text-violet-400"
+                      : "text-zinc-400"
+                }
+              >
+                {text || "\u00A0"}
+              </motion.div>
+            );
+          })}
           {running && (
             <motion.span
               className="inline-block w-2 h-4 bg-violet-400"
