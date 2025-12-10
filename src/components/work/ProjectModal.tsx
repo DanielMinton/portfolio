@@ -127,7 +127,6 @@ export function ProjectModal({ project, isOpen, onClose }: ProjectModalProps) {
                 className="w-full h-full border-0"
                 title={`${project.title} Demo`}
                 onLoad={() => setIsLoading(false)}
-                allow="cross-origin-isolated"
               />
             </div>
 
